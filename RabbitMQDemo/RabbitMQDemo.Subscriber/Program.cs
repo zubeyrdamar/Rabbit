@@ -28,7 +28,7 @@ namespace RabbitMQDemo.Subscriber
             |
             */
 
-            ConsumeQueueWithDirectExchange(channel);
+            ConsumeQueueWithTopicExchange(channel);
 
             Console.ReadLine();
         }
@@ -137,6 +137,45 @@ namespace RabbitMQDemo.Subscriber
 
             // queue name
             var queueName = "direct-queue-Critical";
+
+            // consume the queue
+            channel.BasicConsume(queueName, false, consumer);
+
+            // read received message
+            consumer.Received += (object sender, BasicDeliverEventArgs e) =>
+            {
+                var received_message = Encoding.UTF8.GetString(e.Body.ToArray());
+                Console.WriteLine(received_message);
+
+                // remove the operation from queue which has been successfully read
+                channel.BasicAck(e.DeliveryTag, false);
+
+                Thread.Sleep(1000);
+            };
+        }
+
+        /*
+        | 
+        | TOPIC EXCHANGE
+        | 
+        */
+
+        public static void ConsumeQueueWithTopicExchange(IModel channel)
+        {
+            // arrange number of operations for each queue
+            channel.BasicQos(0, 1, false);
+
+            // create a consumer
+            var consumer = new EventingBasicConsumer(channel);
+
+            // random queue name
+            var queueName = channel.QueueDeclare().QueueName;
+
+            // create a route key
+            var routeKey = "*.Error.*";
+
+            // bind a queue
+            channel.QueueBind(queueName, "logs-topic", routeKey);
 
             // consume the queue
             channel.BasicConsume(queueName, false, consumer);
