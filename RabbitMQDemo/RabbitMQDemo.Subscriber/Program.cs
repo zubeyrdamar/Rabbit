@@ -50,17 +50,25 @@ namespace RabbitMQDemo.Subscriber
 
             channel.QueueDeclare("hello-queue", true, false, false);
 
+            // arrange number of operations for each queue
+            channel.BasicQos(0, 1, false);
+
             // create a consumer
             var consumer = new EventingBasicConsumer(channel);
 
             // consume the queue
-            channel.BasicConsume("hello-queue", true, consumer);
+            channel.BasicConsume("hello-queue", false, consumer);
 
             // read received message
             consumer.Received += (object sender, BasicDeliverEventArgs e) =>
             {
                 var received_message = Encoding.UTF8.GetString(e.Body.ToArray());
                 Console.WriteLine(received_message);
+
+                // remove the operation from queue which has been successfully read
+                channel.BasicAck(e.DeliveryTag, false);
+
+                Thread.Sleep(1000);
             };
         }
     }
