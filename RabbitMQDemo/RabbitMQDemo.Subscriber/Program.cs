@@ -28,10 +28,16 @@ namespace RabbitMQDemo.Subscriber
             |
             */
 
-            ConsumeQueueWithDefaultExchange(channel);
+            ConsumeQueueWithFanoutExchange(channel);
 
             Console.ReadLine();
         }
+
+        /*
+        | 
+        | DEFAULT EXCHANGE
+        | 
+        */
 
         public static void ConsumeQueueWithDefaultExchange(IModel channel)
         {
@@ -58,6 +64,49 @@ namespace RabbitMQDemo.Subscriber
 
             // consume the queue
             channel.BasicConsume("hello-queue", false, consumer);
+
+            // read received message
+            consumer.Received += (object sender, BasicDeliverEventArgs e) =>
+            {
+                var received_message = Encoding.UTF8.GetString(e.Body.ToArray());
+                Console.WriteLine(received_message);
+
+                // remove the operation from queue which has been successfully read
+                channel.BasicAck(e.DeliveryTag, false);
+
+                Thread.Sleep(1000);
+            };
+        }
+
+        /*
+        | 
+        | FANOUT EXCHANGE
+        | 
+        */
+
+        public static void ConsumeQueueWithFanoutExchange(IModel channel)
+        {
+            // create a random queue name
+            var queueName = channel.QueueDeclare().QueueName;
+
+            // create a queue
+            channel.QueueBind(queueName, "logs-fanout", string.Empty, null);
+
+            /*
+            |   
+            |   It is not desired to have the queue after the instance
+            |   destroyed. That's why a queue is binded but not declared.
+            |
+            */
+
+            // arrange number of operations for each queue
+            channel.BasicQos(0, 1, false);
+
+            // create a consumer
+            var consumer = new EventingBasicConsumer(channel);
+
+            // consume the queue
+            channel.BasicConsume(queueName, false, consumer);
 
             // read received message
             consumer.Received += (object sender, BasicDeliverEventArgs e) =>
