@@ -27,8 +27,14 @@ namespace RabbitMQDemo.Publisher
             |
             */
 
-            CreateQueueWithDefaultExchange(channel);
+            CreateQueueWithFanoutExchange(channel);
         }
+
+        /*
+        | 
+        | DEFAULT EXCHANGE
+        | 
+        */
 
         public static void CreateQueueWithDefaultExchange(IModel channel)
         {
@@ -43,6 +49,37 @@ namespace RabbitMQDemo.Publisher
 
                 // print message to queue
                 channel.BasicPublish(string.Empty, "hello-queue", null, messageBody);
+
+                Console.WriteLine($"Message has been added to queue. Message: {message}");
+            }
+        }
+
+        /*
+        | 
+        | FANOUT EXCHANGE
+        | 
+        */
+
+        public static void CreateQueueWithFanoutExchange(IModel channel)
+        {
+            // create a fanout exchange
+            channel.ExchangeDeclare("logs-fanout", durable: true, type: ExchangeType.Fanout);
+
+            foreach (var item in Enumerable.Range(1, 50))
+            {
+                // set message
+                string message = $"log {item}";
+                var messageBody = Encoding.UTF8.GetBytes(message);
+
+                /*
+                |
+                |   At this point message is not printed to queue directly.
+                |   Instead, it is sent to exchange.
+                |   Any queue from consumer will create a queue and get this message.
+                |
+                */
+
+                channel.BasicPublish("logs-fanout", string.Empty, null, messageBody);
 
                 Console.WriteLine($"Message has been added to queue. Message: {message}");
             }
