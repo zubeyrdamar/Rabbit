@@ -27,7 +27,7 @@ namespace RabbitMQDemo.Publisher
             |
             */
 
-            CreateQueueWithFanoutExchange(channel);
+            CreateQueueWithDirectExchange(channel);
         }
 
         /*
@@ -83,6 +83,58 @@ namespace RabbitMQDemo.Publisher
 
                 Console.WriteLine($"Message has been added to queue. Message: {message}");
             }
+        }
+
+        /*
+        | 
+        | DIRECT EXCHANGE
+        | 
+        */
+        
+        public static void CreateQueueWithDirectExchange(IModel channel)
+        {
+            // create a fanout exchange
+            channel.ExchangeDeclare("logs-direct", durable: true, type: ExchangeType.Direct);
+
+            Enum.GetNames(typeof(LogNames)).ToList().ForEach(logName =>
+            {
+                // create a route key
+                var routeKey = $"route-{logName}";
+
+                // create queue name for each log name
+                var queueName = $"direct-queue-{logName}";
+
+                // create queue for each log name
+                channel.QueueDeclare(queueName, true, false, false);
+
+                // bind a queue
+                channel.QueueBind(queueName, "logs-direct", routeKey, null);
+            });
+
+            foreach (var item in Enumerable.Range(1, 50))
+            {
+                // get a random log name
+                LogNames log = (LogNames) new Random().Next(1, 5);
+
+                // create a route key
+                var routeKey = $"route-{log}";
+
+                // set message
+                string message = $"log-type: {log}";
+                var messageBody = Encoding.UTF8.GetBytes(message);
+
+                channel.BasicPublish("logs-direct", routeKey, null, messageBody);
+
+                Console.WriteLine($"Message has been added to queue. Message: {message}");
+            }
+        }
+
+        public enum LogNames
+        {
+            Critical = 1,
+            Error = 2,
+            Warning = 3,
+            Information = 4,
         }
     }
 }
