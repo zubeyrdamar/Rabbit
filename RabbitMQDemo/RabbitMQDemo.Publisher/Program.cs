@@ -35,14 +35,17 @@ namespace RabbitMQDemo.Publisher
             // create a queue
             channel.QueueDeclare("hello-queue", true, false, false);
 
-            // set message
-            string message = "Hello World";
-            var messageBody = Encoding.UTF8.GetBytes(message);
+            foreach (var item in Enumerable.Range(1, 50))
+            {
+                // set message
+                string message = $"Message {item}";
+                var messageBody = Encoding.UTF8.GetBytes(message);
 
-            // print message to queue
-            channel.BasicPublish(string.Empty, "hello-queue", null, messageBody);
+                // print message to queue
+                channel.BasicPublish(string.Empty, "hello-queue", null, messageBody);
 
-            Console.WriteLine("Message has been added to queue");
+                Console.WriteLine($"Message has been added to queue. Message: {message}");
+            }
         }
     }
 }
