@@ -27,7 +27,7 @@ namespace RabbitMQDemo.Publisher
             |
             */
 
-            CreateQueueWithDirectExchange(channel);
+            CreateQueueWithTopicExchange(channel);
         }
 
         /*
@@ -93,7 +93,7 @@ namespace RabbitMQDemo.Publisher
         
         public static void CreateQueueWithDirectExchange(IModel channel)
         {
-            // create a fanout exchange
+            // create a direct exchange
             channel.ExchangeDeclare("logs-direct", durable: true, type: ExchangeType.Direct);
 
             Enum.GetNames(typeof(LogNames)).ToList().ForEach(logName =>
@@ -124,6 +124,37 @@ namespace RabbitMQDemo.Publisher
                 var messageBody = Encoding.UTF8.GetBytes(message);
 
                 channel.BasicPublish("logs-direct", routeKey, null, messageBody);
+
+                Console.WriteLine($"Message has been added to queue. Message: {message}");
+            }
+        }
+
+        /*
+        | 
+        | TOPIC EXCHANGE
+        | 
+        */
+
+        public static void CreateQueueWithTopicExchange(IModel channel)
+        {
+            // create a topic exchange
+            channel.ExchangeDeclare("logs-topic", durable: true, type: ExchangeType.Topic);
+
+            Random random = new Random();
+            foreach (var item in Enumerable.Range(1, 50))
+            {
+                LogNames log1 = (LogNames)random.Next(1, 5);
+                LogNames log2 = (LogNames)random.Next(1, 5);
+                LogNames log3 = (LogNames)random.Next(1, 5);
+
+                // create a route key
+                var routeKey = $"{log1}.{log2}.{log3}";
+
+                // set message
+                string message = $"log-topic: {log1}-{log2}-{log3}";
+                var messageBody = Encoding.UTF8.GetBytes(message);
+
+                channel.BasicPublish("logs-topic", routeKey, null, messageBody);
 
                 Console.WriteLine($"Message has been added to queue. Message: {message}");
             }
