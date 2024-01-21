@@ -28,7 +28,7 @@ namespace RabbitMQDemo.Subscriber
             |
             */
 
-            ConsumeQueueWithTopicExchange(channel);
+            ConsumeQueueWithHeaderExchange(channel);
 
             Console.ReadLine();
         }
@@ -176,6 +176,48 @@ namespace RabbitMQDemo.Subscriber
 
             // bind a queue
             channel.QueueBind(queueName, "logs-topic", routeKey);
+
+            // consume the queue
+            channel.BasicConsume(queueName, false, consumer);
+
+            // read received message
+            consumer.Received += (object sender, BasicDeliverEventArgs e) =>
+            {
+                var received_message = Encoding.UTF8.GetString(e.Body.ToArray());
+                Console.WriteLine(received_message);
+
+                // remove the operation from queue which has been successfully read
+                channel.BasicAck(e.DeliveryTag, false);
+
+                Thread.Sleep(1000);
+            };
+        }
+
+        /*
+        | 
+        | HEADER EXCHANGE
+        | 
+        */
+
+        public static void ConsumeQueueWithHeaderExchange(IModel channel)
+        {
+            // arrange number of operations for each queue
+            channel.BasicQos(0, 1, false);
+
+            // create a consumer
+            var consumer = new EventingBasicConsumer(channel);
+
+            // random queue name
+            var queueName = channel.QueueDeclare().QueueName;
+
+            // create headers
+            Dictionary<string, object> headers = new Dictionary<string, object>();
+            headers.Add("format", "pdf");
+            headers.Add("shape", "a4");
+            headers.Add("x-match", "all");
+
+            // bind a queue
+            channel.QueueBind(queueName, "header-exchange", String.Empty, headers);
 
             // consume the queue
             channel.BasicConsume(queueName, false, consumer);

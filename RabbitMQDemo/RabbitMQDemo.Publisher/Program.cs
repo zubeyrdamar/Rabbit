@@ -27,7 +27,7 @@ namespace RabbitMQDemo.Publisher
             |
             */
 
-            CreateQueueWithTopicExchange(channel);
+            CreateQueueWithHeaderExchange(channel);
         }
 
         /*
@@ -158,6 +158,30 @@ namespace RabbitMQDemo.Publisher
 
                 Console.WriteLine($"Message has been added to queue. Message: {message}");
             }
+        }
+
+        /*
+        | 
+        | HEADER EXCHANGE
+        | 
+        */
+
+        public static void CreateQueueWithHeaderExchange(IModel channel)
+        {
+            // create a header exchange
+            channel.ExchangeDeclare("header-exchange", durable: true, type: ExchangeType.Headers);
+
+            // create headers
+            Dictionary<string, object> headers = new Dictionary<string, object>();
+            headers.Add("format", "pdf");
+            headers.Add("shape", "a4");
+
+            // create properties
+            var properties = channel.CreateBasicProperties();
+            properties.Headers = headers;
+
+            var your_message = Encoding.UTF8.GetBytes("Header exchange message");
+            channel.BasicPublish("header-exchange", string.Empty, properties, your_message);
         }
 
         public enum LogNames
